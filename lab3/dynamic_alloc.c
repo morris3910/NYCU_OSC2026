@@ -1,12 +1,5 @@
 #include "dynamic_alloc.h"
 
-struct chunk_pool{
-    size_t chunk_size;
-    struct list_node free_chunks;
-    size_t free_chunk_count;
-    size_t page_count;
-};
-
 // In RV64, a list node contains two 8-byte pointers, so the minimum chunk is 16 bytes.
 static const size_t chunk_sizes[CHUNK_POOL_NUM] = {
     16,

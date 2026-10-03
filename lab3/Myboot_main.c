@@ -204,8 +204,19 @@ void start_kernel(unsigned long hartid, unsigned long fdt_addr)
     else
         uart_puts("[Reserve] Reserve initramfs succeeded\n\n");
 
+    // startup allocator to allocate frame array
+    if(startup_init(buddy_get_memory_base(), buddy_get_memory_end()) < 0)
+        uart_puts("[Startup] Initialization failed\n");
+    else
+        uart_puts("[Startup] Initialization completed\n");
+
     // init memory allocator
-    buddy_init();
+    if(buddy_init() < 0)
+        uart_puts("[Buddy] Initialization failed\n");
+    else
+        uart_puts("[Buddy] Initialization completed\n");
+    
+    startup_finish();
     dynamic_alloc_init();
     //test_alloc_1();
     

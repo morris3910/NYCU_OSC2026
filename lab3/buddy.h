@@ -28,7 +28,7 @@ struct frame{
     struct list_node node;
 };
 
-void buddy_init();
+int buddy_init();
 
 int buddy_configure_memory(uintptr_t memory_start, uintptr_t memory_end);
 

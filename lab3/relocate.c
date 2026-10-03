@@ -99,13 +99,22 @@ void relocate_and_enter(unsigned long hartid, unsigned long fdt_addr){
     uintptr_t new_stack = new_base + stack_offset;
 
     // RISCV instruction, ensure CPU fetch with new data, not the data in instuction cache
+    // memory means telling compiler this instruction will affect memory, so don't re-arrange memory
+    /*
+    __asm__ volatile(
+        "assembly template"
+        : output operands
+        : input operands
+        : clobber list // memory, cc, t0
+    );
+    */
     __asm__ volatile("fence.i" ::: "memory");
 
     __asm__ volatile(
-        "mv sp, %0\n"
-        "mv a0, %1\n"
-        "mv a1, %2\n"
-        "jr %3\n"
+        "mv sp, %0\n" // %0 -> new_stack
+        "mv a0, %1\n" // a0 is argument1, %1 -> hartid
+        "mv a1, %2\n" // a1 is argument2, %2 -> fdt_addr
+        "jr %3\n" // jump to new kernel entry
         :
         : "r"(new_stack), "r"(hartid), "r"(fdt_addr), "r"(new_entry)
         : "memory"

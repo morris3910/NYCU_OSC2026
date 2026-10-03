@@ -21,6 +21,9 @@ struct reserved_region{
 const struct memory_region *set_memory_region(const void *fdt);
 const struct memory_region *get_memory_region();
 
+int startup_init(uintptr_t start, uintptr_t end);
+int startup_allocate(size_t bytes, uintptr_t* address);
+void startup_finish();
 void memory_reservation_reset();
 int memory_reserve(uintptr_t start, size_t size);
 size_t memory_reserved_region_count();

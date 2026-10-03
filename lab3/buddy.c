@@ -6,7 +6,7 @@ static uintptr_t RAM_memory_end;
 static size_t RAM_page_count;
 
 // The frame array
-static struct frame frame_array[BUDDY_MAX_PAGE_COUNT];
+static struct frame* frame_array;
 
 // A free list for every order
 static struct list_node free_area[BUDDY_MAX_ORDER + 1];
@@ -19,6 +19,7 @@ static uintptr_t align_down(uintptr_t value, uintptr_t align){
     return value & ~(align - 1);
 }
 
+// align RAM range to page size boundary
 int buddy_configure_memory(uintptr_t memory_start, uintptr_t memory_end){
     if(memory_start >= memory_end) return -1;
 
@@ -124,7 +125,7 @@ static unsigned int buddy_find_available_order(size_t idx, size_t remain_pages){
 
     while(order > 0){
         size_t block_pages = (1UL << order);
-        if(block_pages <= remain_pages && !(idx & (block_pages - 1))){
+        if(block_pages <= remain_pages && !(idx & (block_pages - 1))){ // check the idx is align with the block
             return order;
         }
         order--;
@@ -137,20 +138,10 @@ static unsigned int buddy_find_available_order(size_t idx, size_t remain_pages){
 static void buddy_mark_block(size_t idx,
                              unsigned int order,
                              enum frame_state head_state){
-    size_t block_pages = (1UL << order);
-
     frame_array[idx].order = (int)order;
     frame_array[idx].state = head_state;
     frame_array[idx].chunk_pool = -1;
     list_init(&frame_array[idx].node);
-
-    size_t i;
-    for(i = 1; i < block_pages; i++){
-        frame_array[idx + i].order = -1;
-        frame_array[idx + i].state = FRAME_INTERIOR;
-        frame_array[idx + i].chunk_pool = -1;
-        list_init(&frame_array[idx + i].node);
-    }
 }
 
 // Put a free block into free_area[order].
@@ -179,7 +170,17 @@ static void buddy_mark_reserved_region(uintptr_t start, uintptr_t end){
     }
 }
 
-void buddy_init(void){
+int buddy_init(void){
+    if(!RAM_page_count || RAM_page_count > SIZE_MAX / sizeof(struct frame))
+        return -1;
+
+    size_t frame_arr_size = RAM_page_count * sizeof(struct frame);
+    uintptr_t frame_arr_address;
+    if(startup_allocate(frame_arr_size, &frame_arr_address) < 0)
+        return -1;
+
+    frame_array = (struct frame*)frame_arr_address;
+
     unsigned int order;
     for(order = 0; order <= BUDDY_MAX_ORDER; order++){
         list_init(&free_area[order]);
@@ -221,7 +222,8 @@ void buddy_init(void){
             cur += (1UL << block_order);
         }
     }
-    uart_puts("[Buddy] Initialization completed\n");
+    
+    return 0;
 }
 
 size_t buddy_free_block_count(unsigned int order){
@@ -243,8 +245,7 @@ void *buddy_allocate_pages(unsigned int order){
     if(order > BUDDY_MAX_ORDER) return NULL;
 
     unsigned int free_order = order;
-    while(free_order <= BUDDY_MAX_ORDER
-          && list_empty(&free_area[free_order])){
+    while(free_order <= BUDDY_MAX_ORDER && list_empty(&free_area[free_order])){
         free_order++;
     }
 
@@ -315,7 +316,16 @@ void buddy_free_pages(void *address){
         print_remove_pages(buddy_idx, order);
         list_del(&frame_array[buddy_idx].node);
 
-        idx = (buddy_idx < idx) ? buddy_idx : idx;
+        size_t lower_idx = (buddy_idx < idx) ? buddy_idx : idx;
+        size_t upper_idx = (buddy_idx > idx) ? buddy_idx : idx;
+
+        // remove the upper idx's frame state, cause we're combining them
+        frame_array[upper_idx].state = FRAME_INTERIOR;
+        frame_array[upper_idx].order = -1;
+        frame_array[upper_idx].chunk_pool = -1;
+        list_init(&frame_array[upper_idx].node);
+
+        idx = lower_idx;
         order++;
         buddy_mark_block(idx, order, FRAME_FREE);
     }

@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 // Circular doubly linked list implementation.
+// Intrusive list
 
 struct list_node{
     struct list_node* prev;

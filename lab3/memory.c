@@ -1,6 +1,9 @@
 #include "memory.h"
 #include "uart.h"
 
+static uintptr_t startup_cursor;
+static uintptr_t startup_end;
+static int startup_active;
 static struct memory_region physical_memory;
 static struct reserved_region reserved_regions[MAX_RESERVED_REGIONS];
 static size_t reserved_region_count;
@@ -31,6 +34,62 @@ const struct memory_region *get_memory_region(){
     if(physical_memory.start >= physical_memory.end) return NULL;
 
     return &physical_memory;
+}
+
+// set startup memory region after buddy_configure_memory(), which will align RAM memory range with page size
+int startup_init(uintptr_t aligned_start, uintptr_t aligned_end){
+    if(aligned_start >= aligned_end || aligned_start % PAGE_SIZE != 0 || aligned_end % PAGE_SIZE != 0)
+        return -1;
+
+    startup_cursor = aligned_start;
+    startup_end = aligned_end;
+    startup_active = 1;
+    return 0;
+}
+
+int startup_allocate(size_t bytes, uintptr_t* address){
+    if(!startup_active || !address || !bytes)
+        return -1;
+
+    // avoid align up overflow
+    if(bytes > SIZE_MAX - (PAGE_SIZE-1))
+        return -1;
+
+    // align up
+    size_t aligned_bytes = (bytes + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    uintptr_t candidate = startup_cursor;
+    while(1){
+        if(candidate >= startup_end || aligned_bytes > startup_end - candidate)
+            return -1;
+
+        uintptr_t candidate_end = candidate + aligned_bytes;
+        int overlap = 0;
+        
+        for(size_t i=0; i<memory_reserved_region_count(); i++){
+            const struct reserved_region* r = memory_get_reserved_region(i);
+
+            // candidate overlap with reserved memory region
+            if(candidate < r->end && r->start < candidate_end){
+                candidate = r->end;
+                overlap = 1;
+                break;
+            }
+        }
+
+        if(overlap) continue;
+
+        // mark the memory we allcate a reserved memory region
+        if(memory_reserve(candidate, aligned_bytes) < 0)
+            return -1;
+        
+        startup_cursor = candidate_end;
+        *address = candidate;
+        return 0;
+    }
+}
+
+void startup_finish(){
+    startup_active = 0;
 }
 
 void memory_reservation_reset(){
