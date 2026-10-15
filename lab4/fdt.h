@@ -31,5 +31,6 @@ int fdt_get_initrd_range(const void *fdt, const char *initrd_path, uint8_t **rd_
 uintptr_t get_fdt_size(const void *fdt);
 int fdt_get_memory_range(const void *fdt, const char *mem_path, uintptr_t *mem_start, uintptr_t *mem_end);
 int fdt_reserved_memory(const void *fdt);
+int fdt_get_timebase_freq(const void *fdt, const char *timebase_path, uint32_t *freqency);
 
 #endif

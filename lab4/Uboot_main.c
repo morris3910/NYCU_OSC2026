@@ -1,9 +1,9 @@
 #include "uart.h"
 #include "fdt.h"
+#include "sbi.h"
 #include <stdint.h>
 
 extern char __image_start[];
-extern void sbi_get_info(void);
 extern void uart_load_kernel(unsigned long hartid, unsigned long fdt_addr);
 
 #define UART_PATH "/soc/serial"

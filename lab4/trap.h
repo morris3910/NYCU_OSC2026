@@ -1,6 +1,8 @@
 #ifndef TRAP_H
 #define TRAP_H
 
+#include "uart.h"
+#include "timer.h"
 #include <stdint.h>
 
 struct trap_frame{

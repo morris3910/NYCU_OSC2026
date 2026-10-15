@@ -488,3 +488,21 @@ int fdt_reserved_memory(const void *fdt){
         }
     }
 }
+
+// get timebase-freq, which means how many ticks the timer add 1 second
+int fdt_get_timebase_freq(const void *fdt, const char *timebase_path, uint32_t *frequency){
+    if(!fdt || !timebase_path || !frequency) return -1;
+
+    int node_offset = fdt_path_offset(fdt, timebase_path);
+    if(node_offset < 0) return -1;
+
+    int len;
+    const void* prop = fdt_getprop(fdt, node_offset, "timebase-frequency", &len);
+    if(!prop || len != sizeof(uint32_t)) return -1; // cause timebase-freq is a integet
+
+    uint32_t value = read_be32(prop);
+    if(value == 0) return -1;
+
+    *frequency = value;
+    return 0;
+}

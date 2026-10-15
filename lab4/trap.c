@@ -1,5 +1,4 @@
 #include "trap.h"
-#include "uart.h"
 
 uintptr_t trap_kernel_gp, trap_kernel_tp;
 
@@ -43,6 +42,17 @@ static void print_value(const char* name, uint64_t value){
 }
 
 void trap_handler(struct trap_frame* trap_frame){
+    // handle timer interrupt
+    // RV64's timer interrupt sscause : 0x8000000000000005, MSB 1 means interrupt, 5 means timer interrupt
+    uint64_t interrupt_bit = 1UL << 63;
+    uint64_t cause = trap_frame->scause;
+
+    if((cause & interrupt_bit) && ((cause & ~interrupt_bit) == 5)){
+        timer_handle_interrupt();
+        return;
+    }
+
+    // handle exception
     if(trap_frame->sstatus & (1UL << 8))
         uart_puts("[S-mode trap]\n");
     else

@@ -8,8 +8,8 @@ CFLAGS := -march=rv64imac_zicsr_zifencei -mabi=lp64 -fno-pie -mcmodel=medany -ms
 UBOOT_LDFLAGS := -nostdlib -T Uboot_link.ld
 MYBOOT_LDFLAGS := -nostdlib -T Myboot_link.ld
 
-UBOOT_OBJS := start.o Uboot_main.o uart.o sbi_call.o load_image.o fdt.o relocate.o memory.o
-MYBOOT_OBJS := Mystart.o Myboot_main.o uart.o sbi_call.o fdt.o initrd.o buddy.o dynamic_alloc.o memory.o trap_entry.o trap.o user.o
+UBOOT_OBJS := start.o Uboot_main.o uart.o sbi.o load_image.o fdt.o relocate.o memory.o
+MYBOOT_OBJS := Mystart.o Myboot_main.o uart.o sbi.o fdt.o initrd.o buddy.o dynamic_alloc.o memory.o trap_entry.o trap.o user.o timer.o
 
 .PHONY: all clean
 
@@ -61,6 +61,9 @@ trap.o: trap.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 user.o: user.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+timer.o: timer.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 kernel.elf: $(UBOOT_OBJS) Uboot_link.ld

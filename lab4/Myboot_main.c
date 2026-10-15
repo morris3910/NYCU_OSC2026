@@ -7,11 +7,12 @@
 #include "memory.h"
 #include "trap.h"
 #include "user.h"
+#include "sbi.h"
+#include "timer.h"
 #include <stdint.h>
 
 extern char __image_start[];
 extern char __image_end[];
-extern void sbi_get_info(void);
 
 #define UART_PATH "/soc/serial"
 #define INITRD_PATH "/chosen"
@@ -161,6 +162,8 @@ void test_alloc_1() {
 
 void start_kernel(unsigned long hartid, unsigned long fdt_addr)
 {
+    uint64_t boot_ticks = timer_read_time();
+
     // set UART
     uintptr_t uart_base = 0;
     fdt_get_uart_base((const void *)fdt_addr, UART_PATH, &uart_base);
@@ -227,5 +230,11 @@ void start_kernel(unsigned long hartid, unsigned long fdt_addr)
     dynamic_alloc_init();
     //test_alloc_1();
     
+    uint32_t freq;
+    if(fdt_get_timebase_freq((const void*)fdt_addr, "/cpus", &freq) < 0 || timer_init(freq, boot_ticks) < 0){
+        uart_puts("[Timer] Initialization failed.\n");
+        while(1) {}
+    }
+
     shell();
 }

@@ -16,6 +16,9 @@
 enter_user:
     // a0 -> user entry (code addr.)
     // a1 -> user stack top
+
+    csrci sstatus, 2 // close interrupt
+
     csrw sepc, a0
     csrw sscratch, sp // save kernel sp
 
