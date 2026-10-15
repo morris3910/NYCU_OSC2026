@@ -91,7 +91,7 @@ static const uint8_t *skip_node(const uint8_t *ptr){
                 break;
             case FDT_PROP:
                 uint32_t len = read_be32(ptr);
-                ptr += 2 * sizeof(uint32_t); // skip prop_len and prop_off
+                ptr += 2 * sizeof(uint32_t); // skip prop_len and prop_off, total 8 bytes
                 ptr += len; // skip prop data
                 ptr = align_up(ptr, 4);
                 break;
@@ -167,10 +167,11 @@ int fdt_path_offset(const void* fdt, const char* path) {
     if(read_be32(struct_base) != FDT_BEGIN_NODE) return -1;
     if(fdt_strcmp(path, "/") == 0) return 0; // root offset equals to the struct_base addr
     
-    part = path + 1;
+    // ex : /soc/serial
+    part = path + 1; // soc/serial
     while(*part != '\0'){
-        const char *slash = fdt_strchr(part, '/'); // next '/' pos. else NULL
-        size_t part_len = slash ? (size_t)(slash - part) : fdt_strlen(part);
+        const char *slash = fdt_strchr(part, '/'); // next '/' pos. else NULL, soc
+        size_t part_len = slash ? (size_t)(slash - part) : fdt_strlen(part); // soc len : 3
         if(!part_len) return -1;
         
         offset = find_child(struct_base, offset, part, part_len);

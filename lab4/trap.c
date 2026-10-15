@@ -43,7 +43,10 @@ static void print_value(const char* name, uint64_t value){
 }
 
 void trap_handler(struct trap_frame* trap_frame){
-    uart_puts("[Trap]\n");
+    if(trap_frame->sstatus & (1UL << 8))
+        uart_puts("[S-mode trap]\n");
+    else
+        uart_puts("[U-mode trap]\n");
 
     print_value("scause = ", trap_frame->scause);
     print_value("sepc = ", trap_frame->sepc);

@@ -86,6 +86,8 @@ static int initrd_strcmp(const char *s1, const char *s2){
     return (unsigned char)*s1 - (unsigned char)*s2;
 }
 
+// CPIO archive : | hdr | filename + '\0' | padding | file_data | padding |
+
 void initrd_list() {
     // TODO: Implement this function
     int offset = 0;
